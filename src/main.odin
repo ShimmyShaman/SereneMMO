@@ -26,7 +26,6 @@ main :: proc() {
 }
 
 init_main :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
-
   // Vulkan-SDL
   vctx = new(vi.VkSDLContext)
   vi.init_vksdl(vctx, 1440, 900, window_bordered = false, init_sdl2_audio = false) or_return
