@@ -19,10 +19,14 @@ def cleanup_bin_dir():
     import os
     import shutil
 
-    # if os.path.exists(BIN_DIR):
     #     shutil.rmtree(BIN_DIR)
     # os.mkdir(BIN_DIR)
     # os.mkdir(f'{BIN_DIR}/shaders')
+    
+    if not os.path.exists(BIN_DIR):
+        os.mkdir(BIN_DIR)
+        os.mkdir(f'{BIN_DIR}/shaders')
+        return True
 
     return True
 
