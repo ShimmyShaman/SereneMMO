@@ -1,24 +1,7 @@
 # SereneMMO
 
-An MMO
+An open-source MMORPG.
 
-### Purpose
-
-A project to....
-
-### Primary Feature-Set Pillars
-
-#### ????
-
-epsom ilsum...
-
-#### ????
-
-epsom ilsum...
-
-#### ????
-
-epsom ilsum...
 
 ## Progress
 
