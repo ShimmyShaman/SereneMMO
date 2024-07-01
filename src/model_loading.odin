@@ -401,8 +401,8 @@ load_model_render_program :: proc(using vctx: ^vi.VkSDLContext, render_pass_3d: 
   }
 
   // Render Program
-  vs_data := vi._load_binary_file(vert_shader_path) or_return
-  fs_data := vi._load_binary_file(frag_shader_path) or_return
+  vs_data := vi.load_binary_file(vert_shader_path) or_return
+  fs_data := vi.load_binary_file(frag_shader_path) or_return
   rpci := vi.RenderProgramCreateInfo {
     pipeline_config = vi.PipelineCreateConfig {
       render_pass = render_pass_3d,

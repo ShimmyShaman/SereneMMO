@@ -2,6 +2,7 @@ package violin
 
 
 import "core:fmt"
+import "core:os"
 import mx "core:math"
 import "core:math/rand"
 import la "core:math/linalg"
@@ -14,6 +15,18 @@ vec2i :: [2]i32
 vec3 :: la.Vector3f32
 vec4 :: la.Vector4f32
 mat4 :: la.Matrix4f32
+
+load_binary_file :: proc(file_path: string) -> (data: []u8, prs: ProcResult) {
+  success: bool
+  data, success = os.read_entire_file_from_filename(file_path)
+  if !success {
+    prs = .NotYetDetailed
+    fmt.eprintln("Error: load_binary_file>Could not load file:", file_path)
+    return
+  }
+  
+  return
+}
 
 // Transform Matrix + Color
 UtilityMeshUBO :: struct {
@@ -113,8 +126,8 @@ construct_square_mesh :: proc(vctx: ^VkSDLContext, render_pass: RenderPassResour
   // Render Program
   // fmt.println("render_pass_3d:", render_pass_3d)
   // Load the asset
-  vs_data := _load_binary_file(vert_shader_path) or_return
-  fs_data := _load_binary_file(frag_shader_path) or_return
+  vs_data := load_binary_file(vert_shader_path) or_return
+  fs_data := load_binary_file(frag_shader_path) or_return
   rpci := RenderProgramCreateInfo {
     pipeline_config = PipelineCreateConfig {
       render_pass = render_pass,
@@ -214,8 +227,8 @@ construct_circle_mesh :: proc(vctx: ^VkSDLContext, segments: int, render_pass: R
   // Render Program
   // fmt.println("render_pass_3d:", render_pass_3d)
   // Load the asset
-  vs_data := _load_binary_file(vert_shader_path) or_return
-  fs_data := _load_binary_file(frag_shader_path) or_return
+  vs_data := load_binary_file(vert_shader_path) or_return
+  fs_data := load_binary_file(frag_shader_path) or_return
   rpci := RenderProgramCreateInfo {
     pipeline_config = PipelineCreateConfig {
       render_pass = render_pass,

@@ -131,18 +131,6 @@ StampShaders :: struct {
   stb_font_frag: []u8,
 }
 
-_load_binary_file :: proc(file_path: string) -> (data: []u8, prs: ProcResult) {
-  success: bool
-  data, success = os.read_entire_file_from_filename(file_path)
-  if !success {
-    prs = .NotYetDetailed
-    fmt.eprintln("Error: load_binary_file>Could not load file:", file_path)
-    return
-  }
-  
-  return
-}
-
 @(private="file")
 _load_shader :: proc(shader_directory: string, filename: string) -> (shader: []u8, prs: ProcResult) {
   file_path: string
@@ -158,7 +146,7 @@ _load_shader :: proc(shader_directory: string, filename: string) -> (shader: []u
     return
   }
 
-  return _load_binary_file(file_path)
+  return load_binary_file(file_path)
 }
 
 load_stamp_shaders :: proc(shader_directory: string) -> (shaders: ^StampShaders, prs: ProcResult) {

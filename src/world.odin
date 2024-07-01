@@ -11,27 +11,29 @@ WorldData :: struct {
 
   lumin_ubo: BufferResourceHandle,
 
-  terrain: vi.UtilityMesh,
-  terrain_ubo: BufferResourceHandle,
+  // terrain: vi.UtilityMesh,
+  // terrain_ubo: BufferResourceHandle,
 
   avatar_model: ^GLTFAsset,
   avatar_model_rp: RenderProgramResourceHandle,
 
   avatar_state: AvatarState,
+
+  terrain: Terrain,
 }
 
 init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
 
   world.render_pass = vi.create_render_pass(vctx, { .HasDepthBuffer, }, clear_color = vi.Color {0.0, 0.0, 0.0, 1.0}) or_return
 
-  world.terrain = vi.construct_square_mesh(vctx, world.render_pass) or_return
-  world.terrain_ubo = vi.create_uniform_buffer(vctx, size_of(vi.UtilityMeshUBO), .Dynamic) or_return
+  // world.terrain = vi.construct_square_mesh(vctx, world.render_pass) or_return
+  // world.terrain_ubo = vi.create_uniform_buffer(vctx, size_of(vi.UtilityMeshUBO), .Dynamic) or_return
 
-  // Update the World Matrix UBO
-  ubo_data: vi.UtilityMeshUBO
-  ubo_data.transform = la.matrix4_scale_f32(vec3{3,3,3})
-  ubo_data.color = vi.to_vec4(vi.COLOR_DarkGreen)
-  vi.write_to_buffer(vctx, world.terrain_ubo, &ubo_data, size_of(vi.UtilityMeshUBO)) or_return
+  // // Update the World Matrix UBO
+  // ubo_data: vi.UtilityMeshUBO
+  // ubo_data.transform = la.matrix4_scale_f32(vec3{3,3,3})
+  // ubo_data.color = vi.to_vec4(vi.COLOR_DarkGreen)
+  // vi.write_to_buffer(vctx, world.terrain_ubo, &ubo_data, size_of(vi.UtilityMeshUBO)) or_return
 
   world.avatar_model = load_model(vctx, "models/dwarfking.glb") or_return
   world.avatar_model_rp = load_model_render_program(vctx, world.render_pass, world.avatar_model, "shaders/model.vert.spv", "shaders/model.frag.spv") or_return
@@ -46,14 +48,18 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
 
   world.avatar_state.rot = 3.14
 
+  init_terrain(pad) or_return
+
   return
 }
 
 destroy_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
 
-  vi.destroy_utility_mesh(vctx, world.terrain)
+  destroy_terrain(pad)
 
-  vi.destroy_buffer(vctx, world.terrain_ubo)
+  // vi.destroy_utility_mesh(vctx, world.terrain)
+
+  // vi.destroy_buffer(vctx, world.terrain_ubo)
 
   vi.destroy_render_pass(vctx, world.render_pass)
 
@@ -75,14 +81,16 @@ update_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   // View
   update_game_camera(pad) or_return
 
+  update_terrain(pad) or_return
+
   return
 }
 
 render_world :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs: ProcResult) {
   vi.begin_render_pass(rctx, world.render_pass) or_return
 
-  vi.draw_indexed(rctx, world.terrain.rp, world.terrain.vb, world.terrain.ib,
-    []vi.ResourceHandle{auto_cast game_camera.ubo, auto_cast world.terrain_ubo})
+  // vi.draw_indexed(rctx, world.terrain.rp, world.terrain.vb, world.terrain.ib,
+  //   []vi.ResourceHandle{auto_cast game_camera.ubo, auto_cast world.terrain_ubo})
 
   // -- Avatar
   model_mat := la.matrix4_translate_f32(world.avatar_state.pos + vec3{0, 0.43, 0}) *
@@ -99,5 +107,7 @@ render_world :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs: 
       []ResourceHandle{auto_cast game_camera.ubo, auto_cast node.mb, auto_cast world.lumin_ubo,
         auto_cast world.avatar_model.albedo_textures[node.albedo_index]}) or_return
   }
+
+  render_terrain(pad, rctx) or_return
   return
 }
