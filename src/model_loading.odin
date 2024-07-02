@@ -33,6 +33,13 @@ GLTFAsset :: struct {
   uv: vec2,
 }
 
+MeshBufferGroup :: struct {
+  vertex_buffer: vi.VertexBufferResourceHandle,
+  index_buffer: vi.IndexBufferResourceHandle,
+  model_transform_buffer: vi.BufferResourceHandle,
+  render_program: vi.RenderProgramResourceHandle,
+}
+
 load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAsset, prs: ProcResult) {
 
   data, gl_err := gltf.load_from_file(file_name)
@@ -46,12 +53,54 @@ load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAs
   asset = new(GLTFAsset)
   asset._data = data
   
-  // Load all meshes
-  for node in data.nodes {
-    if node.mesh != nil {
-      // 
-    }
-  }
+  // Check nodes (TODO necessary?)
+  // for node in data.nodes {
+  //   if node.mesh != nil {
+  //     // Check
+  //     if node.camera != nil {
+  //       fmt.println("ERROR-TODO] Please report encountering this. Expected node to only be mesh but has camera data")
+  //       prs = .AssetProcessingError
+  //       return
+  //     }
+  //     if node.skin != nil {
+  //       fmt.println("ERROR-TODO] Please report encountering this. Expected node to only be mesh but has skinning data")
+  //       prs = .AssetProcessingError
+  //       return
+  //     }
+
+  //     fmt.eprintln("ERROR-TODO] Please report encountering this. Cannot handle node with mesh")
+  //   }
+  //   else if node.camera != nil {
+  //     // Check
+  //     if node.skin != nil {
+  //       fmt.println("ERROR-TODO] Please report encountering this. Expected node to only be camera but has skinning data")
+  //       prs = .AssetProcessingError
+  //       return
+  //     }
+  
+  //     fmt.eprintln("ERROR-TODO] Please report encountering this. Cannot handle node with camera")
+  //     prs = .AssetProcessingError
+  //     return
+  //   }
+  //   else if node.skin != nil {
+  //     fmt.eprintln("ERROR-TODO] Please report encountering this. Cannot handle node with skinning data")
+  //     prs = .AssetProcessingError
+  //     return
+  //   }
+  //   else {
+  //     fmt.eprintln("ERROR-TODO] Please report encountering this. Expected node to have mesh, camera, or skinning data")
+  //     fmt.eprintln("  node:", node)
+  //     prs = .AssetProcessingError
+  //     return
+  //   }
+  //   TODO -- can also be a skeleton node
+  // }
+
+  
+  // asset.mesh_buffers = make([]vi.VertexBufferResourceHandle, len(data.meshes))
+  // for mesh in data.meshes {
+  // }
+
 
   // // fmt.println("\nLoaded glTF file:", file_name)
   // // fmt.println("data.asset:", data.asset)
@@ -88,19 +137,19 @@ load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAs
 
   // // gltf.unload(data)
 
-  // return
+  return
 }
 
 draw_model :: proc(rctx: ^vi.RenderContext, asset: ^GLTFAsset, transform: ^mat4) -> (prs: ProcResult)  {
-  // // Determine the scene(s) to render
-  // if asset.scene == nil {
-  //   for scene in asset.scenes {
-  //     draw_scene(rctx, asset, scene, transform)
-  //   }
-  // } else {
-  //   draw_scene(rctx, asset, asset.scenes[asset.scene.(gltf.Integer)], transform)
-  // }
-  return
+  // Determine the scene(s) to render
+  if asset.scene == nil {
+    for scene in asset.scenes {
+      draw_scene(rctx, asset, scene, transform)
+    }
+  } else {
+    draw_scene(rctx, asset, asset.scenes[asset.scene.(gltf.Integer)], transform)
+  }
+  return .NotYetImplemented
 }
 
 destroy_model :: proc(vctx: ^vi.VkSDLContext, asset: ^GLTFAsset) {
@@ -152,46 +201,51 @@ destroy_model :: proc(vctx: ^vi.VkSDLContext, asset: ^GLTFAsset) {
 // /////////////////////////////////////////////
 // /////////////////  Drawing  /////////////////
 // /////////////////////////////////////////////
-// @(private="file") draw_scene :: proc(rctx: ^vi.RenderContext, asset: ^GLTFAsset, scene: ^gltf.Scene, transform: ^mat4) {
-//   for node_index in scene.nodes {
-//     draw_node(rctx, asset.nodes[node_index], transform) or_return
-//   }
-// }
+@(private="file") draw_scene :: proc(rctx: ^vi.RenderContext, asset: ^GLTFAsset, scene: gltf.Scene, transform: ^mat4) -> (prs: ProcResult) {
+  for node_index in scene.nodes {
+    draw_node(rctx, asset, asset.nodes[node_index], transform^) or_return
+  }
+  return
+}
 
-// @(private="file") draw_node :: proc(rctx: ^vi.RenderContext, asset: ^GLTFAsset, node: ^gltf.Node, parent_transform: mat4) -> (prs: ProcResult) {
-// //   if node.mesh != nil {
-// //     // Check
-// //     if node.camera != nil {
-// //       fmt.println("ERROR-TODO] Please report encountering this. Expected node to only be mesh but has camera data")
-// //       return .AssetProcessingError
-// //     }
-// //     if node.skin != nil {
-// //       fmt.println("ERROR-TODO] Please report encountering this. Expected node to only be mesh but has skinning data")
-// //       return .AssetProcessingError
-// //     }
+@(private="file") draw_node :: proc(rctx: ^vi.RenderContext, asset: ^GLTFAsset, node: gltf.Node, parent_transform: mat4) -> (prs: ProcResult) {
+  fmt.println("draw_node] node:", node)
 
-// //     // Draw the mesh
-// //     draw_mesh(rctx, asset, asset.meshes[node.mesh.(gltf.Integer)], parent_transform * node.mat) or_return
-// //   }
-// //   else if node.camera != nil {
-// //     // Check
-// //     if node.skin != nil {
-// //       fmt.println("ERROR-TODO] Please report encountering this. Expected node to only be camera but has skinning data")
-// //       return .AssetProcessingError
-// //     }
+  if node.camera != nil {
+    @(static) reported := false
+    if reported == false {
+      fmt.println("ERROR-TODO] Please report encountering this. Cannot draw node with camera data")
+      fmt.println("  node:", node)
+      reported = true
+    }
+  }
 
-// //     fmt.eprintln("ERROR-TODO] Please report encountering this. Cannot handle drawing camera data")
-// //     return .AssetProcessingError
-// //   }
-// //   else if node.skin != nil {
-// //     fmt.eprintln("ERROR-TODO] Please report encountering this. Cannot handle drawing skinning data")
-// //     return .AssetProcessingError
-// //   }
-// //   else {
-// //     fmt.eprintln("ERROR-TODO] Please report encountering this. Expected node to have mesh, camera, or skinning data")
-// //     return .AssetProcessingError
-// //   }
-// // }
+  transform: mat4 = parent_transform * node.transform
+
+  if node.mesh != nil {
+    fmt.println("  draw_node_with_mesh:", node)
+    // mesh_index := node.mesh.? or_else 0
+    // if mesh_index >= len(asset.mesh_buffers) {
+    //   fmt.println("ERROR-TODO] Please report encountering this. Expected mesh index to be less than", len(asset.mesh_buffers),
+    //     "got:", mesh_index)
+    //   prs = .AssetProcessingError
+    //   return
+    // }
+    // mesh_buffer := &asset.mesh_buffers[mesh_index]
+
+    // // Draw the mesh
+    // vi.draw_indexed(rctx, mesh_buffer.render_program, mesh_buffer.vertex_buffer, mesh_buffer.index_buffer,
+    //   []vi.ResourceHandle{auto_cast mesh_buffer.model_transform_buffer, auto_cast asset.albedo_textures[mesh_buffer.albedo_index]}) or_return
+  }
+
+  for child_index in node.children {
+    draw_node(rctx, asset, asset.nodes[child_index], transform) or_return
+  }
+
+  
+  
+  return
+}
 
 // // // @(private="file") create_node :: proc(vctx: ^vi.VkSDLContext, data: ^gltf.Data, asset: ^GLTFAsset, node: gltf.Node) -> (
 // // //     result: ^GLTFNode, prs: ProcResult) {
