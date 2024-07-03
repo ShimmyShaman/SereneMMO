@@ -21,10 +21,11 @@ GLTFAsset :: struct {
   // nodes: []GLTFNode,
 
   albedo_textures: map[int]vi.TextureResourceHandle,
-  vertex_buffers: []vi.VertexBufferResourceHandle,
-  index_buffers: []vi.IndexBufferResourceHandle,
-  model_transform_buffers: []vi.BufferResourceHandle,
-  render_programs: []vi.RenderProgramResourceHandle,
+  // vertex_buffers: []vi.VertexBufferResourceHandle,
+  // index_buffers: []vi.IndexBufferResourceHandle,
+  // model_transform_buffers: []vi.BufferResourceHandle,
+  // render_programs: []vi.RenderProgramResourceHandle,
+  mesh_buffers: []MeshPrimitiveBufferGroup,
 }
 
 @(private) PositionNormalUVVertex :: struct {
@@ -33,11 +34,19 @@ GLTFAsset :: struct {
   uv: vec2,
 }
 
-MeshBufferGroup :: struct {
+@(private) RenderParameterKey :: enum {
+  ModelTransform,
+  LightDirection,
+  LightColor,
+  AlbedoTexture,
+}
+
+MeshPrimitiveBufferGroup :: struct {
   vertex_buffer: vi.VertexBufferResourceHandle,
   index_buffer: vi.IndexBufferResourceHandle,
   model_transform_buffer: vi.BufferResourceHandle,
   render_program: vi.RenderProgramResourceHandle,
+  parameter_keys: []RenderParameterKey,
 }
 
 load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAsset, prs: ProcResult) {
@@ -96,10 +105,171 @@ load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAs
   //   TODO -- can also be a skeleton node
   // }
 
-  
-  // asset.mesh_buffers = make([]vi.VertexBufferResourceHandle, len(data.meshes))
-  // for mesh in data.meshes {
+  // Mesh Loading
+  asset.mesh_buffers = make([]MeshPrimitiveBufferGroup, len(data.meshes))
+  for mesh, index in data.meshes {
+    if len(mesh.primitives) != 1 {
+      fmt.println("ERROR-TODO] Please report encountering this. TODO handle mesh having more than 1 primitive:", len(mesh.primitives))
+      prs = .AssetProcessingError
+      return
+    }
+
+    mbi := &asset.mesh_buffers[index]
+    // asset.mesh_buffers[index].vertex_buffer = make(vi.VertexBufferResourceHandle, len(mesh.primitives))
+    // asset.mesh_buffers[index].index_buffer = make(vi.IndexBufferResourceHandle, len(mesh.primitives))
+    // asset.mesh_buffers[index].model_transform_buffer = make(vi.BufferResourceHandle, len(mesh.primitives))
+    // asset.mesh_buffers[index].render_program = make(vi.RenderProgramResourceHandle, len(mesh.primitives))
+    mbi.parameter_keys = make([]RenderParameterKey, len(mesh.primitives))
+
+    for primitive, p_index in mesh.primitives {
+      // Check
+      if primitive.mode != .Triangles {
+        fmt.println("ERROR-TODO] Please report encountering this. Only supporting TRIANGLES right now:", primitive.mode)
+        prs = .AssetProcessingError
+        return
+      }
+
+
+
+      fmt.println("primitive:", primitive)
+      fmt.println("material:", asset.materials[primitive.material.(gltf.Integer)])
+
+      // Render Program
+      input_attributes: [dynamic]vi.InputAttribute
+      for attrib_name, attrib_index in primitive.attributes {
+        switch attrib {
+          case "POSITION":
+            input_attributes = append(input_attributes, vi.InputAttribute {
+              format: .R32G32B32_SFLOAT,
+              location: 0,
+              offset: auto_cast offset_of(PositionNormalUVVertex, pos),
+            })
+          case "NORMAL":
+            input_attributes = append(input_attributes, vi.InputAttribute {
+              format: .R32G32B32_SFLOAT,
+              location: 1,
+              offset: auto_cast offset_of(PositionNormalUVVertex, normal),
+            })
+          case "TEXCOORD_0":
+            input_attributes = append(input_attributes, vi.InputAttribute {
+              format: .R32G32_SFLOAT,
+              location: 2,
+              offset: auto_cast offset_of(PositionNormalUVVertex, uv),
+            })
+          else {
+            fmt.println("ERROR-TODO] Please report encountering this. Unexpected primitive attribute:", attrib)
+            prs = .AssetProcessingError
+            return
+          }
+        }
+      }
+
+
+      
+  // // Declarations
+  // input_attributes := [?]InputAttribute {
+  //   InputAttribute {
+  //     format = .R32G32B32_SFLOAT,
+  //     location = 0,
+  //     offset = auto_cast offset_of(UtilityMeshVertex, pos),
+  //   },
+  //   InputAttribute {
+  //     format = .R32G32_SFLOAT,
+  //     location = 1,
+  //     offset = auto_cast offset_of(UtilityMeshVertex, uv),
+  //   },
+  //   // InputAttribute {
+  //   //   format = .R32G32B32_SFLOAT,
+  //   //   location = 2,
+  //   //   offset = auto_cast offset_of(TerrainVertex, normal),
+  //   // },
   // }
+  // descriptor_bindings := [?]vk.DescriptorSetLayoutBinding {
+  //   vk.DescriptorSetLayoutBinding {
+  //     binding = 0,
+  //     descriptorType = .UNIFORM_BUFFER,
+  //     stageFlags = { .VERTEX },
+  //     descriptorCount = 1,
+  //     pImmutableSamplers = nil,
+  //   },
+  //   vk.DescriptorSetLayoutBinding {
+  //     binding = 1,
+  //     descriptorType = .UNIFORM_BUFFER,
+  //     stageFlags = { .VERTEX },
+  //     descriptorCount = 1,
+  //     pImmutableSamplers = nil,
+  //   },
+  //   // vk.DescriptorSetLayoutBinding {
+  //   //   binding = 2,
+  //   //   descriptorType = .COMBINED_IMAGE_SAMPLER,
+  //   //   stageFlags = { .FRAGMENT },
+  //   //   descriptorCount = 1,
+  //   //   pImmutableSamplers = nil,
+  //   // },
+  // }
+
+  // // fmt.println("render_pass_3d:", render_pass_3d)
+  // // Load the asset
+  // // vs_data := _load_binary_file(vert_shader_path) or_return
+  // // fs_data := _load_binary_file(frag_shader_path) or_return
+  // rpci := RenderProgramCreateInfo {
+  //   vertex_size = size_of(UtilityMeshVertex),
+  //   buffer_bindings = descriptor_bindings[:],
+  //   input_attributes = input_attributes[:],
+  //   pipeline_config = PipelineCreateConfig {
+  //     render_pass = render_pass,
+  //     vertex_shader_binary = vs_data,
+  //     fragment_shader_binary = fs_data,
+  //   },
+  // }
+  // ccm.rp = create_render_program(vctx, &rpci) or_return
+
+
+
+
+      // if len(primitive.attributes) != 3 {
+      //   fmt.println("ERROR-TODO] Please report encounting this. Expected 3 primitive attributes, got:", len(primitive.attributes))
+      //   prs = .AssetProcessingError
+      //   return
+      // }
+      // if "POSITION" not_in primitive.attributes {
+      //   fmt.println("ERROR-TODO] Please report encounting this. Expected primitive attribute POSITION")
+      //   prs = .AssetProcessingError
+      //   return
+      // }
+      // if "NORMAL" not_in primitive.attributes {
+      //   fmt.println("ERROR-TODO] Please report encounting this. Expected primitive attribute NORMAL")
+      //   prs = .AssetProcessingError
+      //   return
+      // }
+      // if "TEXCOORD_0" not_in primitive.attributes {
+      //   fmt.println("ERROR-TODO] Please report encounting this. Expected primitive attribute TEXCOORD_0")
+      //   prs = .AssetProcessingError
+      //   return
+      // }
+
+      // // Get the accessor & buffer views
+      // pos_accessor := &data.accessors[primitive.attributes["POSITION"]]
+      // normal_accessor := &data.accessors[primitive.attributes["NORMAL"]]
+      // uv_accessor := &data.accessors[primitive.attributes["TEXCOORD_0"]]
+
+      // // Check that the buffer views are not nil
+      // if pos_accessor.buffer_view == nil || normal_accessor.buffer_view == nil || uv_accessor.buffer_view == nil {
+      //   fmt.println("ERROR-TODO] Please report encountering this. Expected buffer views to be non-nil")
+      //   prs = .AssetProcessingError
+      //   return
+      // }
+
+      // pos_bv := &data.buffer_views[pos_accessor.buffer_view.? or_else 0]
+      // normal_bv := &data.buffer_views[normal_accessor.buffer_view.? or_else 0]
+      // uv_bv := &data.buffer_views[uv_accessor.buffer_view.? or_else 0]
+
+      // // Create the Vertex Buffer
+      // vtx_count := data.accessors[primitive.attributes["POSITION"]].count
+      // vtcs := make([]PositionNormalUVVertex, vtx_count)
+      // vertex_buffer := vi.create_vertex_buffer(vctx, &vtcs[0],
+    }
+  }
 
 
   // // fmt.println("\nLoaded glTF file:", file_name)
@@ -208,8 +378,13 @@ destroy_model :: proc(vctx: ^vi.VkSDLContext, asset: ^GLTFAsset) {
   return
 }
 
+
 @(private="file") draw_node :: proc(rctx: ^vi.RenderContext, asset: ^GLTFAsset, node: gltf.Node, parent_transform: mat4) -> (prs: ProcResult) {
-  fmt.println("draw_node] node:", node)
+  // @(static) depth := 0
+  // for i in 0..<depth {
+  //   fmt.print("- ")
+  // }
+  // fmt.println("draw_node] node:", node)
 
   if node.camera != nil {
     @(static) reported := false
@@ -223,26 +398,22 @@ destroy_model :: proc(vctx: ^vi.VkSDLContext, asset: ^GLTFAsset) {
   transform: mat4 = parent_transform * node.transform
 
   if node.mesh != nil {
-    fmt.println("  draw_node_with_mesh:", node)
-    // mesh_index := node.mesh.? or_else 0
-    // if mesh_index >= len(asset.mesh_buffers) {
-    //   fmt.println("ERROR-TODO] Please report encountering this. Expected mesh index to be less than", len(asset.mesh_buffers),
-    //     "got:", mesh_index)
-    //   prs = .AssetProcessingError
-    //   return
-    // }
-    // mesh_buffer := &asset.mesh_buffers[mesh_index]
+    mbi := asset.mesh_buffers[node.mesh.(gltf.Integer)]
+
+    fmt.println("mbi:", mbi)
+    return .NotYetDetailed
 
     // // Draw the mesh
-    // vi.draw_indexed(rctx, mesh_buffer.render_program, mesh_buffer.vertex_buffer, mesh_buffer.index_buffer,
-    //   []vi.ResourceHandle{auto_cast mesh_buffer.model_transform_buffer, auto_cast asset.albedo_textures[mesh_buffer.albedo_index]}) or_return
+    // parameters: vi.ResourceHandle[12]
+
+    // vi.draw_indexed(rctx, mbi.render_program, mbi.vertex_buffer, mbi.index_buffer, parameters) or_return
   }
 
   for child_index in node.children {
+    // depth += 1
     draw_node(rctx, asset, asset.nodes[child_index], transform) or_return
+    // depth -= 1
   }
-
-  
   
   return
 }
