@@ -59,7 +59,7 @@ destroy_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
 
   // vi.destroy_utility_mesh(vctx, world.terrain)
 
-  // vi.destroy_buffer(vctx, world.terrain_ubo)
+  vi.destroy_buffer(vctx, world.lumin_ubo)
 
   vi.destroy_render_pass(vctx, world.render_pass)
 

@@ -2,6 +2,7 @@ package client
 
 import "core:fmt"
 import la "core:math/linalg"
+import mx "core:math"
 
 import vk "vendor:vulkan"
 import vi "violin"
@@ -11,12 +12,16 @@ import vi "violin"
 Terrain :: struct {
   albedo: vi.TextureResourceHandle,
   render_program: vi.RenderProgramResourceHandle,
-  frag_ubo: vi.BufferResourceHandle,
 
   vertex_ary: [CHUNK_DIM_SIZE * CHUNK_DIM_SIZE]TerrainVertex,
 
   vertex_buffer: vi.VertexBufferResourceHandle,
   index_buffer: vi.IndexBufferResourceHandle,
+
+  env_item: ^GLTFAsset,
+  env_item_pos: vec3,
+  env_item_rp: RenderProgramResourceHandle,
+
 }
 
 @(private) TerrainVertex :: struct {
@@ -105,13 +110,6 @@ init_terrain :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   // Uniform Buffer
   // terrain.uniform_buffer = vi.create_uniform_buffer(vctx, chunk_dim_size_of(mat4) + chunk_dim_size_of(vec3), .Dynamic)
 
-  terrain.frag_ubo = vi.create_uniform_buffer(vctx, size_of(vec3) * 2, .Dynamic) or_return
-  frag_data := [2]vec3 {
-    la.normalize(vec3{0.18, 1.0, 0.3}),
-    vec3{1.0, 0.9, 0.4},
-  }
-  vi.write_to_buffer(vctx, terrain.frag_ubo, &frag_data[0], size_of(vec3) * 2) or_return
-
   // Texture
   albedo_options := vi.DefaultTextureCreateOptions
   albedo_options.generate_mipmaps = true
@@ -134,11 +132,23 @@ init_terrain :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   }
   terrain.render_program = vi.create_render_program(vctx, &rpci) or_return
 
+  // -- Env Item
+  terrain.env_item_pos = vec3{10, 0, -10}
+  terrain.env_item = load_model(vctx, "models/ignis_ore.glb") or_return
+  terrain.env_item_rp = load_model_render_program(vctx, world.render_pass, terrain.env_item, "shaders/model.vert.spv", "shaders/model.frag.spv") or_return
+
   return
 }
 
 destroy_terrain :: proc(using pad: ^PropAppData) {
-  
+  terrain := &pad.world.terrain
+
+  vi.destroy_texture(vctx, terrain.albedo)
+  vi.destroy_render_program(vctx, terrain.render_program)
+  vi.destroy_vertex_buffer(vctx, terrain.vertex_buffer)
+  vi.destroy_index_buffer(vctx, terrain.index_buffer)
+  // vi.destroy_uniform_buffer(vctx, terrain.uniform_buffer)
+
 }
 
 update_terrain :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
@@ -151,6 +161,19 @@ render_terrain :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs
   // fmt.println("Rendering terrain", terrain.render_program, terrain.vertex_buffer, terrain.index_buffer, terrain.albedo)
   vi.draw_indexed(rctx, terrain.render_program, terrain.vertex_buffer, terrain.index_buffer,
     []vi.ResourceHandle{auto_cast game_camera.ubo, auto_cast world.lumin_ubo, auto_cast terrain.albedo}) or_return
+
+  // -- Env Item
+  model_mat := la.matrix4_translate_f32(terrain.env_item_pos + vec3{0, 0.43, 0}) *
+  la.matrix4_rotate_f32(mx.PI * -0.5, vec3{1, 0, 0}) * la.matrix4_rotate_f32(1.57, vec3{1, 0, 0}) * la.matrix4_scale_f32(vec3{1, 1, 1})
+
+  for node in terrain.env_item.nodes {
+    // fmt.println("node:", node.name, "albedo_index:", node.albedo_index, "mb:", node.mb, "vb:", node.vb, "ib:", node.ib)
+    // fmt.println("terrain.env_item.albedo_textures:", terrain.env_item.albedo_textures)
+    vi.write_to_buffer(vctx, node.mb, &model_mat, size_of(mat4)) or_return
+    vi.draw_indexed(rctx, terrain.env_item_rp, node.vb, node.ib,
+      []ResourceHandle{auto_cast game_camera.ubo, auto_cast node.mb, auto_cast world.lumin_ubo,
+        auto_cast terrain.env_item.albedo_textures[node.albedo_index]}) or_return
+  }
 
   return
 }
