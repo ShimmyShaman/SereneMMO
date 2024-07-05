@@ -49,7 +49,7 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   //   append(&world.bug_ubos, ubo)
   // }
 
-  world.castle_guard = load_model(vctx, "models/dwarfking.glb") or_return
+  world.castle_guard = load_model(pad, "models/dwarfking.glb") or_return
   // world.castle_guard = load_model(vctx, "models/castle_guard.glb") or_return
 
   // Lighting

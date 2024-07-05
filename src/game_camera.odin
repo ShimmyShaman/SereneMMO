@@ -23,6 +23,11 @@ GameCamera :: struct {
   ubo: vi.BufferResourceHandle,
 }
 
+@(private="file") CameraUBO :: struct {
+  view_proj: mat4,
+  pos: vec3,
+}
+
 init_game_camera :: proc(using pad: ^PropAppData) -> (ppr: ProcResult) {
   cam := &pad.game_camera
     
@@ -33,7 +38,7 @@ init_game_camera :: proc(using pad: ^PropAppData) -> (ppr: ProcResult) {
   cam.pitch = -0.5
 
   // View Project Buffer
-  cam.ubo = vi.create_uniform_buffer(vctx, size_of(mat4), .Dynamic) or_return
+  cam.ubo = vi.create_uniform_buffer(vctx, size_of(CameraUBO), .Dynamic) or_return
 
   return
 }
@@ -126,7 +131,11 @@ update_game_camera :: proc(using pad: ^PropAppData) -> (ppr: ProcResult) {
   cam.view_proj = cam.proj * cam.view
 
   // Update UBO
-  vi.write_to_buffer(vctx, cam.ubo, &cam.view_proj, size_of(mat4)) or_return
+  ubo_data := CameraUBO{
+    view_proj = cam.view_proj,
+    pos = cam.pos,
+  }
+  vi.write_to_buffer(vctx, cam.ubo, &ubo_data, size_of(CameraUBO)) or_return
 
   return
 }

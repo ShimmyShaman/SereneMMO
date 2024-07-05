@@ -12,6 +12,10 @@ import gltf "glTF2"
 import vi "violin"
 // import gltf "vendor:cgltf"
 
+// ModelLoader :: struct {
+//   render_programs: map[]
+// }
+
 GLTFAsset :: struct {
   using _data: ^gltf.Data,
 
@@ -24,7 +28,7 @@ GLTFAsset :: struct {
   // vertex_buffers: []vi.VertexBufferResourceHandle,
   // index_buffers: []vi.IndexBufferResourceHandle,
   // model_transform_buffers: []vi.BufferResourceHandle,
-  // render_programs: []vi.RenderProgramResourceHandle,
+  render_programs: []vi.RenderProgramResourceHandle,
   mesh_buffers: []MeshPrimitiveBufferGroup,
 }
 
@@ -35,21 +39,26 @@ GLTFAsset :: struct {
 }
 
 @(private) RenderParameterKey :: enum {
-  ModelTransform,
-  LightDirection,
-  LightColor,
-  AlbedoTexture,
+  CameraUBO,
+  ModelTransformUBO,
+  // LightDirection,
+  // LightColor,
+  // AlbedoTexture,
+}
+
+@(private) ModelRenderProgram :: struct {
+  render_program: vi.RenderProgramResourceHandle,
+  parameter_keys: []RenderParameterKey,
 }
 
 MeshPrimitiveBufferGroup :: struct {
   vertex_buffer: vi.VertexBufferResourceHandle,
   index_buffer: vi.IndexBufferResourceHandle,
   model_transform_buffer: vi.BufferResourceHandle,
-  render_program: vi.RenderProgramResourceHandle,
-  parameter_keys: []RenderParameterKey,
+  render_program: ModelRenderProgram,
 }
 
-load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAsset, prs: ProcResult) {
+load_model :: proc(pad: ^PropAppData, file_name: string) -> (asset: ^GLTFAsset, prs: ProcResult) {
 
   data, gl_err := gltf.load_from_file(file_name)
   if gl_err != nil {
@@ -119,7 +128,6 @@ load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAs
     // asset.mesh_buffers[index].index_buffer = make(vi.IndexBufferResourceHandle, len(mesh.primitives))
     // asset.mesh_buffers[index].model_transform_buffer = make(vi.BufferResourceHandle, len(mesh.primitives))
     // asset.mesh_buffers[index].render_program = make(vi.RenderProgramResourceHandle, len(mesh.primitives))
-    mbi.parameter_keys = make([]RenderParameterKey, len(mesh.primitives))
 
     for primitive, p_index in mesh.primitives {
       // Check
@@ -129,103 +137,11 @@ load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAs
         return
       }
 
-
-
       fmt.println("primitive:", primitive)
       fmt.println("material:", asset.materials[primitive.material.(gltf.Integer)])
 
-      // Render Program
-      input_attributes: [dynamic]vi.InputAttribute
-      for attrib_name, attrib_index in primitive.attributes {
-        switch attrib {
-          case "POSITION":
-            input_attributes = append(input_attributes, vi.InputAttribute {
-              format: .R32G32B32_SFLOAT,
-              location: 0,
-              offset: auto_cast offset_of(PositionNormalUVVertex, pos),
-            })
-          case "NORMAL":
-            input_attributes = append(input_attributes, vi.InputAttribute {
-              format: .R32G32B32_SFLOAT,
-              location: 1,
-              offset: auto_cast offset_of(PositionNormalUVVertex, normal),
-            })
-          case "TEXCOORD_0":
-            input_attributes = append(input_attributes, vi.InputAttribute {
-              format: .R32G32_SFLOAT,
-              location: 2,
-              offset: auto_cast offset_of(PositionNormalUVVertex, uv),
-            })
-          else {
-            fmt.println("ERROR-TODO] Please report encountering this. Unexpected primitive attribute:", attrib)
-            prs = .AssetProcessingError
-            return
-          }
-        }
-      }
-
-
-      
-  // // Declarations
-  // input_attributes := [?]InputAttribute {
-  //   InputAttribute {
-  //     format = .R32G32B32_SFLOAT,
-  //     location = 0,
-  //     offset = auto_cast offset_of(UtilityMeshVertex, pos),
-  //   },
-  //   InputAttribute {
-  //     format = .R32G32_SFLOAT,
-  //     location = 1,
-  //     offset = auto_cast offset_of(UtilityMeshVertex, uv),
-  //   },
-  //   // InputAttribute {
-  //   //   format = .R32G32B32_SFLOAT,
-  //   //   location = 2,
-  //   //   offset = auto_cast offset_of(TerrainVertex, normal),
-  //   // },
-  // }
-  // descriptor_bindings := [?]vk.DescriptorSetLayoutBinding {
-  //   vk.DescriptorSetLayoutBinding {
-  //     binding = 0,
-  //     descriptorType = .UNIFORM_BUFFER,
-  //     stageFlags = { .VERTEX },
-  //     descriptorCount = 1,
-  //     pImmutableSamplers = nil,
-  //   },
-  //   vk.DescriptorSetLayoutBinding {
-  //     binding = 1,
-  //     descriptorType = .UNIFORM_BUFFER,
-  //     stageFlags = { .VERTEX },
-  //     descriptorCount = 1,
-  //     pImmutableSamplers = nil,
-  //   },
-  //   // vk.DescriptorSetLayoutBinding {
-  //   //   binding = 2,
-  //   //   descriptorType = .COMBINED_IMAGE_SAMPLER,
-  //   //   stageFlags = { .FRAGMENT },
-  //   //   descriptorCount = 1,
-  //   //   pImmutableSamplers = nil,
-  //   // },
-  // }
-
-  // // fmt.println("render_pass_3d:", render_pass_3d)
-  // // Load the asset
-  // // vs_data := _load_binary_file(vert_shader_path) or_return
-  // // fs_data := _load_binary_file(frag_shader_path) or_return
-  // rpci := RenderProgramCreateInfo {
-  //   vertex_size = size_of(UtilityMeshVertex),
-  //   buffer_bindings = descriptor_bindings[:],
-  //   input_attributes = input_attributes[:],
-  //   pipeline_config = PipelineCreateConfig {
-  //     render_pass = render_pass,
-  //     vertex_shader_binary = vs_data,
-  //     fragment_shader_binary = fs_data,
-  //   },
-  // }
-  // ccm.rp = create_render_program(vctx, &rpci) or_return
-
-
-
+      // Find the Render Program corresponding to the material
+      mbi.render_program := get_render_program(pad, primitive, asset.materials[primitive.material.(gltf.Integer)]) or_return
 
       // if len(primitive.attributes) != 3 {
       //   fmt.println("ERROR-TODO] Please report encounting this. Expected 3 primitive attributes, got:", len(primitive.attributes))
@@ -308,6 +224,101 @@ load_model :: proc(vctx: ^vi.VkSDLContext, file_name: string) -> (asset: ^GLTFAs
   // // gltf.unload(data)
 
   return
+}
+
+get_render_program :: proc(pad: ^PropAppData, primitive: ^gltf.Mesh_Primitive, material: ^gltf.Material) -> (rp: ModelRenderProgram, prs: ProcResult) {
+      // input_attributes: []vi.InputAttribute
+      // for attrib_name, attrib_index in primitive.attributes {
+      //   switch attrib {
+      //     case "POSITION":
+      //   //     input_attributes = append(input_attributes, vi.InputAttribute {
+      //   //       format: .R32G32B32_SFLOAT,
+      //   //       location: 0,
+      //   //       offset: auto_cast offset_of(PositionNormalUVVertex, pos),
+      //   //     })
+      //   //   case "NORMAL":
+      //   //     input_attributes = append(input_attributes, vi.InputAttribute {
+      //   //       format: .R32G32B32_SFLOAT,
+      //   //       location: 1,
+      //   //       offset: auto_cast offset_of(PositionNormalUVVertex, normal),
+      //   //     })
+      //   //   // case "TEXCOORD_0":
+      //   //   //   input_attributes = append(input_attributes, vi.InputAttribute {
+      //   //   //     format: .R32G32_SFLOAT,
+      //   //   //     location: 2,
+      //   //   //     offset: auto_cast offset_of(PositionNormalUVVertex, uv),
+      //   //   //   })
+      //   //   else {
+      //   //     fmt.println("ERROR-TODO] Please report encountering this. Unexpected primitive attribute:", attrib)
+      //   //     prs = .AssetProcessingError
+      //   //     return
+      //   //   }
+      //   // }
+      // }
+
+
+      
+  // Declarations
+  input_attributes := [?]vi.InputAttribute {
+    vi.InputAttribute {
+      format = .R32G32B32_SFLOAT,
+      location = 0,
+      offset = auto_cast offset_of(PositionNormalUVVertex, pos),
+    },
+    vi.InputAttribute {
+      format = .R32G32B32_SFLOAT,
+      location = 2,
+      offset = auto_cast offset_of(PositionNormalUVVertex, normal),
+    },
+    vi.InputAttribute {
+      format = .R32G32_SFLOAT,
+      location = 1,
+      offset = auto_cast offset_of(PositionNormalUVVertex, uv),
+    },
+  }
+  descriptor_bindings := [?]vk.DescriptorSetLayoutBinding {
+    // Camera UBO
+    vk.DescriptorSetLayoutBinding {
+      binding = 0,
+      descriptorType = .UNIFORM_BUFFER,
+      stageFlags = { .VERTEX },
+      descriptorCount = 1,
+      pImmutableSamplers = nil,
+    },
+    // Model Transform UBO
+    vk.DescriptorSetLayoutBinding {
+      binding = 1,
+      descriptorType = .UNIFORM_BUFFER,
+      stageFlags = { .VERTEX },
+      descriptorCount = 1,
+      pImmutableSamplers = nil,
+    },
+    // vk.DescriptorSetLayoutBinding {
+    //   binding = 2,
+    //   descriptorType = .COMBINED_IMAGE_SAMPLER,
+    //   stageFlags = { .FRAGMENT },
+    //   descriptorCount = 1,
+    //   pImmutableSamplers = nil,
+    // },
+  }
+  rp.parameter_keys = make([]RenderParameterKey, 2)
+  rp.parameter_keys[0] = .CameraUBO
+  rp.parameter_keys[1] = .ModelTransformUBO
+
+  // Load the asset
+  vs_data := vi._load_binary_file("shaders/pbr0.vert.spv") or_return
+  fs_data := vi._load_binary_file("shaders/pbr0.vert.spv") or_return
+  rpci := RenderProgramCreateInfo {
+    vertex_size = size_of(UtilityMeshVertex),
+    buffer_bindings = descriptor_bindings[:],
+    input_attributes = input_attributes[:],
+    pipeline_config = PipelineCreateConfig {
+      render_pass = pad.world.render_pass,
+      vertex_shader_binary = vs_data,
+      fragment_shader_binary = fs_data,
+    },
+  }
+  rp = create_render_program(pad.vctx, &rpci) or_return
 }
 
 draw_model :: proc(rctx: ^vi.RenderContext, asset: ^GLTFAsset, transform: ^mat4) -> (prs: ProcResult)  {
@@ -403,10 +414,27 @@ destroy_model :: proc(vctx: ^vi.VkSDLContext, asset: ^GLTFAsset) {
     fmt.println("mbi:", mbi)
     return .NotYetDetailed
 
-    // // Draw the mesh
-    // parameters: vi.ResourceHandle[12]
+    // Draw the mesh
+    parameters: vi.ResourceHandle[12]
+    for key, idx in mbi.render_program.parameter_keys {
+      switch key {
+        case .CameraUBO:
+          parameters[idx] = asset.camera_ubo
+        case .ModelTransformUBO:
+          parameters[idx] = mbi.model_transform_buffer
+        // case .LightDirection:
+        //   parameters[key] = asset.light_direction_ubo
+        // case .LightColor:
+        //   parameters[key] = asset.light_color_ubo
+        // case .AlbedoTexture:
+        //   parameters[key] = asset.albedo_textures[mbi.albedo_index]
+        case:
+          fmt.println("ERROR-TODO] Please report encountering this. Unexpected RenderParameterKey:", key)
+          return .NotYetImplemented
+      }
+    }
 
-    // vi.draw_indexed(rctx, mbi.render_program, mbi.vertex_buffer, mbi.index_buffer, parameters) or_return
+    vi.draw_indexed(rctx, mbi.render_program, mbi.vertex_buffer, mbi.index_buffer, parameters[0:len(mbi.render_program.parameter_keys)]) or_return
   }
 
   for child_index in node.children {
