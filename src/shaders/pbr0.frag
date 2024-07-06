@@ -1,4 +1,4 @@
-#version 450 core
+#version 450
 
 layout(location = 0) out vec4 FragColor;
 
@@ -11,8 +11,8 @@ layout(location = 3) in vec3 in_cam_pos;
 // uniform float metallic;
 // uniform float roughness;
 // uniform float ao;
-vec3 albedo = vec3(0.5, 0.0, 0.0);
-float metallic = 0.0;
+layout(binding = 2) uniform sampler2D albedo_sampler;
+float metallic = 0.5;
 float roughness = 0.5;
 float ao = 1.0;
 
@@ -21,8 +21,8 @@ float ao = 1.0;
 // uniform vec3 lightColors[4];
 vec3 lightPositions[4] = vec3[4](vec3(-10.0,  10.0, 10.0),
                                  vec3( 10.0,  10.0, 10.0),
-                                 vec3(-10.0, -10.0, 10.0),
-                                 vec3( 10.0, -10.0, 10.0));
+                                 vec3(-10.0, 10.0, 10.0),
+                                 vec3( 10.0, 10.0, 10.0));
 vec3 lightColors[4] = vec3[4](vec3(300.0, 300.0, 300.0),
                                 vec3(300.0, 300.0, 300.0),
                                 vec3(300.0, 300.0, 300.0),
@@ -37,6 +37,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0);
 
 void main()
 {		
+    vec3 albedo = texture(albedo_sampler, in_tex_uv).bgr;
     vec3 N = normalize(in_normal);
     vec3 V = normalize(in_cam_pos - in_world_pos);
 
@@ -78,7 +79,8 @@ void main()
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));  
    
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(albedo, 1.0);
+    // FragColor = vec4(0.0, 1.0, 1.0, 1.0);
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)

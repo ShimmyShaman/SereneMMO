@@ -49,6 +49,7 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   //   append(&world.bug_ubos, ubo)
   // }
 
+  // world.castle_guard = load_model(pad, "models/nullcube.glb") or_return
   world.castle_guard = load_model(pad, "models/dwarfking.glb") or_return
   // world.castle_guard = load_model(vctx, "models/castle_guard.glb") or_return
 
@@ -122,7 +123,7 @@ render_world :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs: 
     la.matrix4_rotate_f32(world.avatar_state.rot + mx.PI * 0.5, vec3{0, 1, 0}) *
     la.matrix4_rotate_f32(mx.PI * 0.5, vec3{1, 0, 0}) *
     la.matrix4_scale_f32(vec3{1, 1, 1})
-  draw_model(rctx, world.castle_guard, &transform) or_return
+  draw_model(pad, rctx, world.castle_guard, &transform) or_return
 
   return
 }

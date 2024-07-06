@@ -22,9 +22,9 @@ layout(location = 2) out vec3 frag_normal;
 layout(location = 3) out vec3 frag_cam_pos;
 
 void main() {
-  frag_pos = vec4(in_position, 0.0) * model.transform;
-  gl_Position = cam.vp * frag_pos;
+  gl_Position = cam.vp * model.transform * vec4(in_position, 1.0);
   
+  frag_pos = model.transform * vec4(in_position, 0.0);
   frag_tex_coord = in_tex_coord;
   frag_normal = in_normal;
   frag_cam_pos = cam.camera_pos;
