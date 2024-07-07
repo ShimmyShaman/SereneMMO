@@ -20,8 +20,6 @@ Terrain :: struct {
 
   env_item: ^GLTFAsset,
   env_item_pos: vec3,
-  env_item_rp: RenderProgramResourceHandle,
-
 }
 
 @(private) TerrainVertex :: struct {
@@ -134,8 +132,7 @@ init_terrain :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
 
   // -- Env Item
   terrain.env_item_pos = vec3{10, 0, -10}
-  terrain.env_item = load_model(vctx, "models/ignis_ore.glb") or_return
-  terrain.env_item_rp = load_model_render_program(vctx, world.render_pass, terrain.env_item, "shaders/model.vert.spv", "shaders/model.frag.spv") or_return
+  terrain.env_item = load_model(pad, "models/ignis_ore.glb") or_return
 
   return
 }
@@ -149,6 +146,7 @@ destroy_terrain :: proc(using pad: ^PropAppData) {
   vi.destroy_index_buffer(vctx, terrain.index_buffer)
   // vi.destroy_uniform_buffer(vctx, terrain.uniform_buffer)
 
+  destroy_model(vctx, terrain.env_item)
 }
 
 update_terrain :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
@@ -166,14 +164,16 @@ render_terrain :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs
   model_mat := la.matrix4_translate_f32(terrain.env_item_pos + vec3{0, 0.43, 0}) *
   la.matrix4_rotate_f32(mx.PI * -0.5, vec3{1, 0, 0}) * la.matrix4_rotate_f32(1.57, vec3{1, 0, 0}) * la.matrix4_scale_f32(vec3{1, 1, 1})
 
-  for node in terrain.env_item.nodes {
-    // fmt.println("node:", node.name, "albedo_index:", node.albedo_index, "mb:", node.mb, "vb:", node.vb, "ib:", node.ib)
-    // fmt.println("terrain.env_item.albedo_textures:", terrain.env_item.albedo_textures)
-    vi.write_to_buffer(vctx, node.mb, &model_mat, size_of(mat4)) or_return
-    vi.draw_indexed(rctx, terrain.env_item_rp, node.vb, node.ib,
-      []ResourceHandle{auto_cast game_camera.ubo, auto_cast node.mb, auto_cast world.lumin_ubo,
-        auto_cast terrain.env_item.albedo_textures[node.albedo_index]}) or_return
-  }
+  draw_model(pad, rctx, terrain.env_item, &model_mat)
+
+  // for node in terrain.env_item.nodes {
+  //   // fmt.println("node:", node.name, "albedo_index:", node.albedo_index, "mb:", node.mb, "vb:", node.vb, "ib:", node.ib)
+  //   // fmt.println("terrain.env_item.albedo_textures:", terrain.env_item.albedo_textures)
+  //   vi.write_to_buffer(vctx, node.mb, &model_mat, size_of(mat4)) or_return
+  //   vi.draw_indexed(rctx, terrain.env_item_rp, node.vb, node.ib,
+  //     []ResourceHandle{auto_cast game_camera.ubo, auto_cast node.mb, auto_cast world.lumin_ubo,
+  //       auto_cast terrain.env_item.albedo_textures[node.albedo_index]}) or_return
+  // }
 
   return
 }

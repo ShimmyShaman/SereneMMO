@@ -497,6 +497,13 @@ destroy_model :: proc(vctx: ^vi.VkSDLContext, asset: ^GLTFAsset) {
     vi.destroy_texture(vctx, texture)
   }
 
+  for mbi in asset.mesh_buffers {
+    vi.destroy_resource(vctx, mbi.vertex_buffer)
+    vi.destroy_resource(vctx, mbi.index_buffer)
+    vi.destroy_resource(vctx, mbi.model_transform_buffer)
+    vi.destroy_resource(vctx, mbi.render_program.render_program)
+  }
+
   // for node in asset.nodes {
   //   vi.destroy_resource(vctx, node.vb)
   //   vi.destroy_resource(vctx, node.ib)

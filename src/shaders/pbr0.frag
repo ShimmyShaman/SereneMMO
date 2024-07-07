@@ -12,21 +12,21 @@ layout(location = 3) in vec3 in_cam_pos;
 // uniform float roughness;
 // uniform float ao;
 layout(binding = 2) uniform sampler2D albedo_sampler;
-float metallic = 0.5;
-float roughness = 0.5;
+float metallic = 0.1;
+float roughness = 1.0;
 float ao = 1.0;
 
 // lights
 // uniform vec3 lightPositions[4];
 // uniform vec3 lightColors[4];
-vec3 lightPositions[4] = vec3[4](vec3(-10.0,  10.0, 10.0),
+vec3 lightPositions[4] = vec3[4](vec3(-100.0,  1000.0, 100.0),
                                  vec3( 10.0,  10.0, 10.0),
                                  vec3(-10.0, 10.0, 10.0),
                                  vec3( 10.0, 10.0, 10.0));
-vec3 lightColors[4] = vec3[4](vec3(21.0, 1.0, 1.0),
-                                vec3(1.0, 51.0, 1.0),
-                                vec3(1.0, 221.0, 111.0),
-                                vec3(1.0, 1.0, 321.0));
+vec3 lightColors[4] = vec3[4](vec3(10000.0, 10000.0, 8000.0),
+                                vec3(0.0, 0.0, 0.0),
+                                vec3(0.0, 0.0, 0.0),
+                                vec3(0.0, 0.0, 0.0));
 
 const float PI = 3.14159265359;
 

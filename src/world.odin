@@ -30,12 +30,6 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   // world.terrain = vi.construct_square_mesh(vctx, world.render_pass) or_return
   // world.terrain_ubo = vi.create_uniform_buffer(vctx, size_of(vi.UtilityMeshUBO), .Dynamic) or_return
 
-  // Update the World Matrix UBO
-  ubo_data: vi.UtilityMeshUBO
-  ubo_data.transform = la.matrix4_scale_f32(vec3{5,1,3})
-  ubo_data.color = vi.to_vec4(vi.COLOR_DarkGreen)
-  vi.write_to_buffer(vctx, world.terrain_ubo, &ubo_data, size_of(vi.UtilityMeshUBO)) or_return
-
   world.avatar_model = load_model(pad, "models/dwarfking.glb") or_return
 
   // world.npc_bug = load_model(vctx, "models/castle_guard.glb") or_return
