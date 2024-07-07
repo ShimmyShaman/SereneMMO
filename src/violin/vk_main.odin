@@ -980,6 +980,7 @@ create_graphics_pipeline :: proc(ctx: ^VkSDLContext, pipeline_config: ^PipelineC
   
   if res := vk.CreateGraphicsPipelines(ctx.device, 0, 1, &pipeline_info, nil, &pipeline.handle); res != .SUCCESS {
     fmt.eprintln("Error: Failed to create graphics pipeline! res=", res)
+    fmt.eprintln("--Caller:", caller)
     prs = .NotYetDetailed
     return
   }

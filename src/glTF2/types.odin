@@ -1,6 +1,7 @@
 package gltf2
 
 import "core:encoding/json"
+import la "core:math/linalg"
 
 @private ACCESSORS_KEY :: "accessors"
 @private ANIMATIONS_KEY :: "animations"
@@ -30,7 +31,8 @@ GLTF_DOUBLE_PRECISION :: #config(GLTF_DOUBLE_PRECISION, false)
 
 Integer :: u32
 Number :: f64 when GLTF_DOUBLE_PRECISION else f32
-Matrix4 :: matrix[4, 4]Number
+// Matrix4 :: matrix[4, 4]Number
+Matrix4 :: la.Matrix4x4f64 when GLTF_DOUBLE_PRECISION else la.Matrix4x4f32
 Quaternion :: quaternion256 when GLTF_DOUBLE_PRECISION else quaternion128
 
 Options :: struct {
@@ -398,10 +400,11 @@ Mesh_Target_Type :: enum {
     Node data structure
 */
 Node :: struct {
-    mat: Matrix4, // Default Identity Matrix
-    rotation: Quaternion, // Default [x = 0, y = 0, z = 0, w = 1]
-    scale: [3]Number, // Default [1, 1, 1]
-    translation: [3]Number,
+    // mat: Maybe(Matrix4), // Default Identity Matrix
+    // rotation: Maybe(Quaternion), // Default [x = 0, y = 0, z = 0, w = 1]
+    // scale: [3]Number, // Default [1, 1, 1]
+    // translation: [3]Number,
+    transform: Matrix4,
     camera, mesh, skin: Maybe(Integer),
     children: []Integer,
     name: Maybe(string),

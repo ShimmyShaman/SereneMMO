@@ -8,7 +8,7 @@ import "core:os"
 import "core:path/filepath"
 import "core:strconv"
 import "core:strings"
-
+import la "core:math/linalg"
 
 GLB_MAGIC :: 0x46546c67
 GLB_HEADER_SIZE :: size_of(GLB_Header)
@@ -1329,9 +1329,10 @@ nodes_parse :: proc(object: json.Object) -> (res: []Node, err: Error) {
     res = make([]Node, len(nodes_array))
 
     for node, idx in nodes_array {
-        res[idx].mat = Matrix4(1)
-        res[idx].rotation = Quaternion(1)
-        res[idx].scale = { 1, 1, 1 }
+        tsfm_matrix: Maybe(Matrix4) = nil
+        scale: Maybe([3]Number) = nil
+        rotation: Maybe(Quaternion) = nil
+        translation: Maybe([3]Number) = nil
 
         for k, v in node.(json.Object) {
             switch k {
@@ -1346,9 +1347,11 @@ nodes_parse :: proc(object: json.Object) -> (res: []Node, err: Error) {
 
             case "matrix": // Default identity matrix
                 // Matrices are stored in column-major order. Odin matrices are indexed like this [row, col]
+                val: Matrix4
                 for num, i in v.(json.Array) {
-                    res[idx].mat[i % 4, i / 4] = Number(num.(f64))                    
+                    val[i % 4, i / 4] = Number(num.(f64))                    
                 }
+                tsfm_matrix = val
 
             case "mesh":
                 res[idx].mesh = Integer(v.(f64))
@@ -1357,24 +1360,29 @@ nodes_parse :: proc(object: json.Object) -> (res: []Node, err: Error) {
                 res[idx].name = v.(string)
 
             case "scale": // Default [1, 1, 1]
+                val: [3]Number
                 for num, i in v.(json.Array) {
-                    res[idx].scale[i] = Number(num.(f64))
+                    val[i] = Number(num.(f64))
                 }
+                scale = val
 
             case "skin":
                 res[idx].skin = Integer(v.(f64))
 
             case "rotation": // Default [0, 0, 0, 1]
-                rotation: [4]Number
-                for num, i in v.(json.Array) {
-                    rotation[i] = Number(num.(f64))
-                }
-                mem.copy(&res[idx].rotation, &rotation, size_of(Quaternion))
+                val: Quaternion
+                val.x = Number(v.(json.Array)[0].(f64))
+                val.y = Number(v.(json.Array)[1].(f64))
+                val.z = Number(v.(json.Array)[2].(f64))
+                val.w = Number(v.(json.Array)[3].(f64))
+                rotation = val
 
             case "translation": // Defalt [0, 0, 0]
+                val: [3]Number
                 for num, i in v.(json.Array) {
-                    res[idx].translation[i] = Number(num.(f64))
+                    val[i] = Number(num.(f64))
                 }
+                translation = val
 
             case "weights":
                 res[idx].weights = make([]Number, len(v.(json.Array)))
@@ -1389,6 +1397,43 @@ nodes_parse :: proc(object: json.Object) -> (res: []Node, err: Error) {
                 res[idx].extras = v
 
             case: warning_unexpected_data(#procedure, k, v, idx)
+            }
+        }
+
+        if tsfm_matrix != nil {
+            res[idx].transform = tsfm_matrix.(Matrix4)
+        } else if scale != nil || rotation != nil || translation != nil {
+            when GLTF_DOUBLE_PRECISION {
+                res[idx].transform = la.MATRIX4F64_IDENTITY
+
+                if translation != nil {
+                    res[idx].transform = la.matrix4_translate_f64(translation.([3]Number))
+                }
+                if rotation != nil {
+                    res[idx].transform *= la.matrix4_from_quaternion_f64(rotation.([4]Number))
+                }
+                if scale != nil {
+                    res[idx].transform *= la.matrix4_scale_f64(scale.([3]Number))
+                }
+            } else {
+                res[idx].transform = la.MATRIX4F32_IDENTITY
+
+                if translation != nil {
+                    res[idx].transform = la.matrix4_translate_f32(translation.([3]Number))
+                }
+                if rotation != nil {
+                    res[idx].transform *= la.matrix4_from_quaternion_f32(rotation.(Quaternion))
+                }
+                if scale != nil {
+                    res[idx].transform *= la.matrix4_scale_f32(scale.([3]Number))
+                }
+            }
+        } else {
+            // panic(fmt.aprint("Node must have either a matrix or translation/rotation/scale:\n", res[idx]))
+            when GLTF_DOUBLE_PRECISION {
+                res[idx].transform = la.MATRIX4F64_IDENTITY
+            } else {
+                res[idx].transform = la.MATRIX4F32_IDENTITY
             }
         }
     }

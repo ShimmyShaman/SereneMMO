@@ -21,5 +21,5 @@ ProcResult :: enum {
 
   // Game Error Codes
   AssetLoadError,
-
+  AssetProcessingError,
 }

@@ -318,11 +318,11 @@ _set_scissor_cmd :: proc(command_buffer: vk.CommandBuffer, x: i32, y: i32, width
 }
 
 draw_indexed :: proc(using rctx: ^RenderContext, render_program: RenderProgramResourceHandle, vertex_buffer: VertexBufferResourceHandle,
-  index_buffer: IndexBufferResourceHandle, parameters: []ResourceHandle, draw_index_count: u32 = 0) -> ProcResult {
+  index_buffer: IndexBufferResourceHandle, parameters: []ResourceHandle, draw_index_count: u32 = 0, caller_loc := #caller_location) -> ProcResult {
   // Obtain the resources
-  vbuf: ^VertexBuffer = auto_cast get_resource(&rctx.ctx.resource_manager, vertex_buffer) or_return
-  ibuf: ^IndexBuffer = auto_cast get_resource(&rctx.ctx.resource_manager, index_buffer) or_return
-  rprog: ^RenderProgram = auto_cast get_resource(&rctx.ctx.resource_manager, render_program) or_return
+  vbuf: ^VertexBuffer = auto_cast get_resource(&rctx.ctx.resource_manager, vertex_buffer, caller_loc) or_return
+  ibuf: ^IndexBuffer = auto_cast get_resource(&rctx.ctx.resource_manager, index_buffer, caller_loc) or_return
+  rprog: ^RenderProgram = auto_cast get_resource(&rctx.ctx.resource_manager, render_program, caller_loc) or_return
 
   // Setup viewport and clip
   if rctx.ctx.__settings.support_negative_viewport_heights {
