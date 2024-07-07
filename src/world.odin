@@ -21,9 +21,9 @@ WorldData :: struct {
 
   avatar_state: AvatarState,
 
-  npc_bug: ^GLTFAsset,
-  bug_ubos: [dynamic]BufferResourceHandle,
-  npc_rp: RenderProgramResourceHandle,
+  // npc_bug: ^GLTFAsset,
+  // bug_ubos: [dynamic]BufferResourceHandle,
+  // npc_rp: RenderProgramResourceHandle,
 }
 
 init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
@@ -39,8 +39,7 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   ubo_data.color = vi.to_vec4(vi.COLOR_DarkGreen)
   vi.write_to_buffer(vctx, world.terrain_ubo, &ubo_data, size_of(vi.UtilityMeshUBO)) or_return
 
-  // world.avatar_model = load_model(vctx, "models/dwarfking.glb") or_return
-  // world.avatar_model_rp = load_model_render_program(vctx, world.render_pass, world.avatar_model, "shaders/model.vert.spv", "shaders/model.frag.spv") or_return
+  world.avatar_model = load_model(pad, "models/dwarfking.glb") or_return
 
   // world.npc_bug = load_model(vctx, "models/castle_guard.glb") or_return
   // world.npc_rp = load_model_render_program(vctx, world.render_pass, world.npc_bug, "shaders/model.vert.spv", "shaders/model.frag.spv") or_return
@@ -49,9 +48,10 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   //   append(&world.bug_ubos, ubo)
   // }
 
-  // world.castle_guard = load_model(pad, "models/nullcube.glb") or_return
-  world.castle_guard = load_model(pad, "models/dwarfking.glb") or_return
-  // world.castle_guard = load_model(vctx, "models/castle_guard.glb") or_return
+  world.castle_guard = load_model(pad, "models/nullcube.glb") or_return
+  // world.castle_guard = load_model(pad, "models/checkeredcube.glb") or_return
+  // world.castle_guard = load_model(pad, "models/dwarfking.glb") or_return
+  // world.castle_guard = load_model(pad, "models/castle_guard.glb") or_return
 
   // Lighting
   world.lumin_ubo = vi.create_uniform_buffer(vctx, size_of(vec4) * 2, .Dynamic) or_return
@@ -76,9 +76,10 @@ destroy_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   vi.destroy_render_pass(vctx, world.render_pass)
 
   destroy_model(vctx, world.castle_guard)
+  destroy_model(vctx, world.avatar_model)
 
-  vi.destroy_render_program(vctx, world.npc_rp)
-  destroy_model(vctx, world.npc_bug)
+  // vi.destroy_render_program(vctx, world.npc_rp)
+  // destroy_model(vctx, world.npc_bug)
 
   return
 }
@@ -119,10 +120,11 @@ render_world :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs: 
   //       auto_cast world.npc_bug.albedo_textures[node.albedo_index]}) or_return
   // }
 
-  transform := la.matrix4_translate_f32(vec3{0, 0.43, 0}) *
-    la.matrix4_rotate_f32(world.avatar_state.rot + mx.PI * 0.5, vec3{0, 1, 0}) *
-    la.matrix4_rotate_f32(mx.PI * 0.5, vec3{1, 0, 0}) *
-    la.matrix4_scale_f32(vec3{1, 1, 1})
+  transform := la.matrix4_translate_f32(world.avatar_state.pos + vec3{0, 0.43, 0}) *
+    la.matrix4_rotate_f32(world.avatar_state.rot + mx.PI * 0.5, vec3{0, 1, 0}) * la.matrix4_scale_f32(vec3{1, 1, 1})
+  draw_model(pad, rctx, world.avatar_model, &transform) or_return
+
+  transform = la.matrix4_translate_f32(vec3{3, 0.43, 3})
   draw_model(pad, rctx, world.castle_guard, &transform) or_return
 
   return

@@ -449,13 +449,13 @@ get_render_program :: proc(pad: ^PropAppData, primitive: gltf.Mesh_Primitive, ma
       descriptorCount = 1,
       pImmutableSamplers = nil,
     },
-    // vk.DescriptorSetLayoutBinding {
-    //   binding = 2,
-    //   descriptorType = .COMBINED_IMAGE_SAMPLER,
-    //   stageFlags = { .FRAGMENT },
-    //   descriptorCount = 1,
-    //   pImmutableSamplers = nil,
-    // },
+    vk.DescriptorSetLayoutBinding {
+      binding = 2,
+      descriptorType = .COMBINED_IMAGE_SAMPLER,
+      stageFlags = { .FRAGMENT },
+      descriptorCount = 1,
+      pImmutableSamplers = nil,
+    },
   }
   rp.parameter_keys = make([]RenderParameterKey, 3)
   rp.parameter_keys[0] = .CameraUBO
@@ -579,8 +579,8 @@ destroy_model :: proc(vctx: ^vi.VkSDLContext, asset: ^GLTFAsset) {
         case .CameraUBO:
           parameters[idx] = auto_cast pad.game_camera.ubo
         case .ModelTransformUBO:
-          tsfm := la.matrix4_translate_f32(vec3{0, 0, 0})
-          vi.write_to_buffer(pad.vctx, mbi.model_transform_buffer, &tsfm, size_of(mat4)) or_return
+          // tsfm := la.matrix4_translate_f32(vec3{0, 0, 0})
+          vi.write_to_buffer(pad.vctx, mbi.model_transform_buffer, &transform, size_of(mat4)) or_return
           
           parameters[idx] = auto_cast mbi.model_transform_buffer
         // case .LightDirection:
