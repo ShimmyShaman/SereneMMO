@@ -15,10 +15,10 @@ WorldData :: struct {
   // terrain_ubo: BufferResourceHandle,
 
   avatar_model: ^GLTFAsset,
-
-  castle_guard: ^GLTFAsset,
+  alternate_model: ^GLTFAsset,
 
   avatar_state: AvatarState,
+  npc_bug: ^GLTFAsset,
 
   terrain: Terrain,
 }
@@ -32,17 +32,17 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
 
   world.avatar_model = load_model(pad, "models/dwarfking.glb") or_return
 
-  // world.npc_bug = load_model(vctx, "models/castle_guard.glb") or_return
+  // world.npc_bug = load_model(vctx, "models/pillbug1.glb") or_return
   // world.npc_rp = load_model_render_program(vctx, world.render_pass, world.npc_bug, "shaders/model.vert.spv", "shaders/model.frag.spv") or_return
   // for i in 0..<3 {
   //   ubo := vi.create_uniform_buffer(vctx, size_of(vi.UtilityMeshUBO), .Dynamic) or_return
   //   append(&world.bug_ubos, ubo)
   // }
 
-  world.castle_guard = load_model(pad, "models/nullcube.glb") or_return
-  // world.castle_guard = load_model(pad, "models/checkeredcube.glb") or_return
-  // world.castle_guard = load_model(pad, "models/dwarfking.glb") or_return
-  // world.castle_guard = load_model(pad, "models/castle_guard.glb") or_return
+  world.alternate_model = load_model(pad, "models/nullcube.glb") or_return
+  // world.alternate_model = load_model(pad, "models/checkeredcube.glb") or_return
+  // world.alternate_model = load_model(pad, "models/dwarfking.glb") or_return
+  // world.alternate_model = load_model(pad, "models/alternate_model.glb") or_return
 
   // Lighting
   world.lumin_ubo = vi.create_uniform_buffer(vctx, size_of(vec4) * 2, .Dynamic) or_return
@@ -67,7 +67,7 @@ destroy_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
 
   vi.destroy_render_pass(vctx, world.render_pass)
 
-  destroy_model(vctx, world.castle_guard)
+  destroy_model(vctx, world.alternate_model)
   destroy_model(vctx, world.avatar_model)
 
   // vi.destroy_render_program(vctx, world.npc_rp)
@@ -106,7 +106,7 @@ render_world :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs: 
   draw_model(pad, rctx, world.avatar_model, &transform) or_return
 
   transform = la.matrix4_translate_f32(vec3{3, 0.43, 3})
-  draw_model(pad, rctx, world.castle_guard, &transform) or_return
+  draw_model(pad, rctx, world.alternate_model, &transform) or_return
 
   render_terrain(pad, rctx) or_return
 

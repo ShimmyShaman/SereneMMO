@@ -1,6 +1,6 @@
 # SereneMMO
 
-An open-source MMORPG.
+An MMORPG. The best it can be.
 
 
 ## Progress
