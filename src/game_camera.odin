@@ -1,6 +1,7 @@
 package client
 
 import "core:fmt"
+import "core:c"
 import la "core:math/linalg"
 import mx "core:math"
 
@@ -21,6 +22,8 @@ GameCamera :: struct {
   view, proj, view_proj: mat4,
 
   ubo: vi.BufferResourceHandle,
+
+  window_size: [2]int,
 }
 
 @(private="file") CameraUBO :: struct {
@@ -118,6 +121,10 @@ update_game_camera :: proc(using pad: ^PropAppData) -> (ppr: ProcResult) {
   cam := &pad.game_camera
   avs := &pad.world.avatar_state
 
+  sw, sh: c.int
+  sdl2.GetWindowSize(pad.vctx.window, &sw, &sh)
+  cam.window_size = [2]int{ auto_cast sw, auto_cast sh }
+
   // Calculate cam position
   cam_offset := la.vector_normalize(vec3{mx.cos_f32(cam.view_rot), cam.pitch, -mx.sin_f32(cam.view_rot)})
   // cam_offset.y = 
@@ -126,7 +133,7 @@ update_game_camera :: proc(using pad: ^PropAppData) -> (ppr: ProcResult) {
 
   // Update view/proj
   cam.view = la.matrix4_look_at(cam.pos, avs.pos + vec3{0, cam.avatar_target_look_height_offset, 0}, cam.up)
-  cam.proj = la.matrix4_perspective(cam.fov, cast(f32)vctx.swap_chain.extent.width / cast(f32)vctx.swap_chain.extent.height,
+  cam.proj = la.matrix4_perspective(cam.fov, cast(f32)cam.window_size.x / cast(f32)cam.window_size.y,
             0.1, 10000)
   cam.view_proj = cam.proj * cam.view
 

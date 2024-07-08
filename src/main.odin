@@ -182,8 +182,26 @@ render_ui :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs: Pro
 
   fps_str := fmt.tprintf("fps:%d", cast(int) (1.0 / ft.running_avg))
   vi.stamp_text(rctx, stamprr, default_font, fps_str, 4, 28, &vi.COLOR_Gold) or_return
-  // gs_str := fmt.tprintf("pos:%.1f,%.1f  time:%.1f (%d)", 0.0, 0.0, ft.total_elapsed, 1)
-  // vi.stamp_text(rctx, stamprr, pad.default_font, gs_str, 4, 56, &vi.COLOR_Gold) or_return
+
+  status_str := fmt.tprintf("hp:%d", pad.world.avatar_state.hitpoints)
+  vi.stamp_text(rctx, stamprr, default_font, status_str, pad.game_camera.window_size.x / 2 - 60, pad.game_camera.window_size.y - 40, &vi.COLOR_Gold) or_return
+  
+  avs := &pad.world.avatar_state
+  strike_str := "Power Strike"
+  if avs.power_cooldown > 0 {
+    strike_str = fmt.tprintf("Power Strike (%.1f)", avs.power_cooldown)
+    vi.stamp_text(rctx, stamprr, small_font, strike_str, pad.game_camera.window_size.x / 2 - 60, pad.game_camera.window_size.y - 170, &vi.COLOR_Gray) or_return
+  } else if avs.global_cooldown > 0 {
+    strike_str = fmt.tprintf("Power Strike (%.1f)", avs.global_cooldown)
+    vi.stamp_text(rctx, stamprr, small_font, strike_str, pad.game_camera.window_size.x / 2 - 60, pad.game_camera.window_size.y - 170, &vi.Color{0.1, 0.8, 0.8, 1.0}) or_return
+  } else {
+    strike_str = "Power Strike"
+    vi.stamp_text(rctx, stamprr, small_font, strike_str, pad.game_camera.window_size.x / 2 - 60, pad.game_camera.window_size.y - 170, &vi.COLOR_Gold) or_return
+  }
+  if avs.npc_target != nil {
+    target_str := fmt.tprintf("NPC: %d", avs.npc_target.hitpoints)
+    vi.stamp_text(rctx, stamprr, small_font, target_str, pad.game_camera.window_size.x / 2 + 160, pad.game_camera.window_size.y - 140, &vi.COLOR_Gold) or_return
+  }
 
   return
 }

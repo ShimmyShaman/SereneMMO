@@ -28,6 +28,8 @@ InputCode :: enum {
   // Fullscreen,
   // Exit,
 
+  PowerStrike,
+
   SetMoveAndPanMode,
   SetPanMode,
 }
@@ -63,6 +65,7 @@ init_player_input :: proc(pad: ^PropAppData) -> (prs: ProcResult) {
   keyboard_map[.SEMICOLON] = .Forward
   keyboard_map[.W] = .Forward
   keyboard_map[.D] = .Backward
+  keyboard_map[.NUM1] = .PowerStrike
 
   mouse_map = make_map(map[u8]InputCode, 4)
   mouse_map[sdl2.BUTTON_LEFT] = .SetPanMode
