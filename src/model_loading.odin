@@ -278,9 +278,9 @@ load_model :: proc(pad: ^PropAppData, file_name: string) -> (asset: ^GLTFAsset, 
         return
       }
       if len(primitive.attributes) != 3 {
-        fmt.println("ERROR-TODO] Please report encounting this. Expected 3 primitive attributes, got:", len(primitive.attributes))
-        prs = .AssetLoadError
-        return
+        fmt.println("WARN-TODO] Please report encounting this. Expected 3 primitive attributes, got:", len(primitive.attributes), primitive.attributes)
+        // prs = .AssetLoadError
+        // return
       }
       if "POSITION" not_in primitive.attributes {
         fmt.println("ERROR-TODO] Please report encounting this. Expected primitive attribute POSITION")
@@ -409,9 +409,9 @@ get_render_program :: proc(pad: ^PropAppData, primitive: gltf.Mesh_Primitive, ma
       // }
   // Temp only-render-program check
   if len(primitive.attributes) != 3 {
-    fmt.println("ERROR-TODO] Please report encountering this. Expected 3 primitive attributes, got:", len(primitive.attributes), primitive.attributes)
-    prs = .AssetProcessingError
-    return
+    fmt.println("WARN-TODO] Please report encountering this. Expected 3 primitive attributes, got:", len(primitive.attributes), primitive.attributes)
+    // prs = .AssetProcessingError
+    // return
   }
       
   // Declarations

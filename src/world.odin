@@ -17,6 +17,7 @@ WorldData :: struct {
 
   avatar_model: ^GLTFAsset,
   alternate_model: ^GLTFAsset,
+  alternate_model2: ^GLTFAsset,
 
   avatar_state: AvatarState,
 
@@ -55,6 +56,8 @@ init_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   // world.alternate_model = load_model(pad, "models/dwarfking.glb") or_return
   // world.alternate_model = load_model(pad, "models/alternate_model.glb") or_return
 
+  world.alternate_model2 = load_model(pad, "models/large_ogre_with_a_ham.glb") or_return
+
   // Lighting
   world.lumin_ubo = vi.create_uniform_buffer(vctx, size_of(vec4) * 2, .Dynamic) or_return
   frag_data := [2]vec4 {
@@ -79,6 +82,7 @@ destroy_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
   vi.destroy_render_pass(vctx, world.render_pass)
 
   destroy_model(vctx, world.alternate_model)
+  destroy_model(vctx, world.alternate_model2)
   destroy_model(vctx, world.avatar_model)
   destroy_model(vctx, world.npc.model)
 
@@ -108,6 +112,7 @@ update_world :: proc(using pad: ^PropAppData) -> (prs: ProcResult) {
     fmt.println("Avatar has died!")
     world.avatar_state.hitpoints = 24
     world.avatar_state.pos = vec3{0, 0, 0}
+    world.npc.target_avatar = false
   }
 
   return
@@ -208,8 +213,12 @@ render_world :: proc(using pad: ^PropAppData, rctx: ^vi.RenderContext) -> (prs: 
     la.matrix4_rotate_f32(world.avatar_state.rot + mx.PI * 0.5, vec3{0, 1, 0}) * la.matrix4_scale_f32(vec3{1, 1, 1})
   draw_model(pad, rctx, world.avatar_model, &transform) or_return
 
-  transform = la.matrix4_translate_f32(vec3{3, 0.43, 3})
+  transform = la.matrix4_translate_f32(vec3{32, 0.43, 3})
   draw_model(pad, rctx, world.alternate_model, &transform) or_return
+
+  transform = la.matrix4_translate_f32(vec3{18, 2.2, 22}) *
+  la.matrix4_rotate_f32(mx.PI * 1.3, vec3{0, 1, 0}) * la.matrix4_scale_f32(vec3{4, 4, 4})
+  draw_model(pad, rctx, world.alternate_model2, &transform) or_return
 
   if world.npc.hitpoints > 0 {
     transform = la.matrix4_translate_f32(world.npc.pos + vec3{0, 0.4, 0}) *
